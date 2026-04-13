@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # Main FastAPI Application
+  parking-api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://parking_user:parking_password@postgres/parking_db
+      - DB_API_BASE_URL=http://127.0.0.1:5000/api
+      - ARDUINO_PORT=COM3
+      - ESP32_IP=192.168.1.100
+      - DEBUG=false
+    depends_on:
+      - postgres
+    volumes:
+      - ./app:/app/app
+      - ./alembic:/app/alembic
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=parking_db
+      - POSTGRES_USER=parking_user
+      - POSTGRES_PASSWORD=parking_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./alembic:/docker-entrypoint-initdb.d
+
+  # Admin Web Interface (Optional)
+  # admin-web:
+  #   build: ./admin-web
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - parking-api
+
+  # Mobile App API (Optional)
+  # mobile-api:
+  #   build: ./mobile-api
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - parking-api
+
+volumes:
+  postgres_data:
