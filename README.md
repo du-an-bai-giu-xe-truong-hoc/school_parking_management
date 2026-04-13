@@ -35,6 +35,69 @@
     *Sau đó, truy cập GitHub/GitLab để tạo PR vào nhánh `develop`. Team Leader hoặc thành viên khác sẽ review trước khi merge.*
 
 ---
+## Cấu trúc hệ thống
+
+```
+
+school_parking_management/
+
+├── ai_modules/          # Các module AI
+
+├── app/                 # Ứng dụng chính
+
+│   ├── api/             # API endpoints
+
+│   │   ├── camera.py    # API camera
+
+│   │   ├── routes.py    # Định tuyến API
+
+│   │   └── __init__.py
+
+│   ├── core/            # Cấu hình cốt lõi
+
+│   │   └── config.py
+
+│   ├── db/              # Cơ sở dữ liệu
+
+│   ├── models/          # Mô hình dữ liệu
+
+│   ├── schemas/         # Schemas dữ liệu
+
+│   │   ├── camera.py
+
+│   │   └── __init__.py
+
+│   ├── services/        # Dịch vụ
+
+│   │   ├── ocr_service.py  # Dịch vụ OCR
+
+│   │   └── __init__.py
+
+│   └── main.py          # File chính
+
+├── docs/                # Tài liệu
+
+├── hardware/            # Phần cứng
+
+├── legacy/              # Code cũ
+
+│   └── old_python_application/
+
+├── test/                # Thư mục test
+
+├── docker-compose.yml   # Docker compose
+
+├── Dockerfile           # Dockerfile
+
+├── requirements.txt     # Dependencies Python
+
+├── pytest.ini           # Cấu hình pytest
+
+└── __init__.py
+
+```
+
+
 
 ## 📝 Quy ước đặt tên Commit (Commit Convention)
 
