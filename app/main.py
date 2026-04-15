@@ -9,6 +9,8 @@ from app.api.routes import router
 from app.core.config import settings
 from app.db.session import engine
 from app.db.base import Base
+from app.db.session import engine
+from app.db.base import Base
 
 # Ra lệnh tạo toàn bộ bảng (Users, Vehicles, Transactions) nếu chưa có
 Base.metadata.create_all(bind=engine)

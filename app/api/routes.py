@@ -1,84 +1,111 @@
 """
 API routes for the parking management system
-Các route API cho hệ thống quản lý bãi đỗ xe
+Hệ thống quản lý bãi đỗ xe - Chế độ kết nối Database thực
 """
 
-from fastapi import APIRouter
-from app.schemas import CameraData
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from typing import List
+
+# Import hạ tầng kỹ thuật
+from app.db.session import get_db
+from app.models.models import User, Vehicle, Transaction
+from app.schemas.schemas import CameraData, UserResponse, UserUpdate, VehicleResponse # Đảm bảo đã định nghĩa các schema này
 from app.services.parking_service import parking_service
 from app.api.camera import router as camera_router
 
 router = APIRouter()
 
+# Tích hợp module xử lý Camera
 router.include_router(camera_router, prefix="/camera", tags=["camera"])
 
 # ==========================================
-# CAMERA ENDPOINTS - Đón dữ liệu từ Camera
+# CAMERA ENDPOINTS - Xử lý dữ liệu thời gian thực
 # ==========================================
 
 @router.post("/webhook/camera-scan")
-async def receive_camera_data(data: CameraData):
+async def receive_camera_data(data: CameraData, db: Session = Depends(get_db)):
     """
-    Endpoint webhook nhận dữ liệu từ camera quét QR/biển số
+    Tiếp nhận dữ liệu từ Camera AI và đối soát trực tiếp với Database
     """
+    # Lưu ý: Truyền thêm 'db' vào service để nó có thể truy vấn bảng
     return await parking_service.process_vehicle_request(
+        db=db,
         qr_code=data.qr_code,
         gate_type=data.gate_type,
         bien_so=data.bien_so
     )
 
-@router.get("/users/{user_id}")
-async def get_user(user_id: int):
-    """Lấy thông tin người dùng theo ID (Demo mock)"""
-    return {"user_id": user_id, "name": "Mock User", "role": "student"}
-
-@router.put("/users/{user_id}")
-async def update_user(user_id: int, user_update: dict):
-    """Cập nhật thông tin người dùng (Demo mock)"""
-    return {"user_id": user_id, "status": "updated", "data": user_update}
-
 # ==========================================
-# VEHICLE MANAGEMENT ENDPOINTS
+# USER MANAGEMENT - Quản lý hồ sơ chủ xe
 # ==========================================
 
-@router.get("/vehicles/")
-async def get_vehicles(skip: int = 0, limit: int = 100):
-    """Lấy danh sách phương tiện đã đăng ký (Demo mock)"""
-    return [
-        {"id": 1, "bien_so": "29A-12345", "owner": "Mock User"}
-    ]
+@router.get("/users/{user_id}", response_model=UserResponse)
+async def get_user(user_id: int, db: Session = Depends(get_db)):
+    """Truy xuất thông tin người dùng từ SQL Server"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ người dùng.")
+    return user
 
-@router.post("/vehicles/")
-async def create_vehicle(vehicle: dict):
-    """Tạo phương tiện mới (Demo mock)"""
-    return {"id": 2, "bien_so": vehicle.get("bien_so", "Unknown"), "status": "created"}
-
-@router.get("/vehicles/{vehicle_id}")
-async def get_vehicle(vehicle_id: int):
-    """Lấy phương tiện theo ID (Demo mock)"""
-    return {"id": vehicle_id, "bien_so": "29A-12345", "owner": "Mock User"}
+@router.put("/users/{user_id}", response_model=UserResponse)
+async def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
+    """Cập nhật thông tin hồ sơ người dùng"""
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Đối tượng không tồn tại.")
+    
+    update_data = user_update.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_user, key, value)
+    
+    db.commit()
+    db.refresh(db_user)
+    return db_user
 
 # ==========================================
-# TRANSACTION ENDPOINTS
+# VEHICLE MANAGEMENT - Quản lý phương tiện
+# ==========================================
+
+@router.get("/vehicles/", response_model=List[VehicleResponse])
+async def get_vehicles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Truy xuất danh sách phương tiện thực tế từ SQL Server"""
+    try:
+        vehicles = db.query(Vehicle).offset(skip).limit(limit).all()
+        return vehicles
+    except Exception as e:
+        # Nếu vẫn lỗi 500, đoạn này sẽ ghi lại bằng chứng vào Terminal
+        print(f"[LỖI TRUY VẤN]: {str(e)}")
+        raise HTTPException(status_code=500, detail="Lỗi truy xuất cơ sở dữ liệu.")
+
+@router.post("/vehicles/", response_model=VehicleResponse)
+async def create_vehicle(vehicle_data: dict, db: Session = Depends(get_db)):
+    """Đăng ký phương tiện mới vào hệ thống"""
+    new_vehicle = Vehicle(**vehicle_data)
+    db.add(new_vehicle)
+    try:
+        db.commit()
+        db.refresh(new_vehicle)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Lỗi đăng ký phương tiện: {str(e)}")
+    return new_vehicle
+
+# ==========================================
+# TRANSACTION - Lịch sử bãi xe
 # ==========================================
 
 @router.get("/transactions/")
-async def get_transactions(skip: int = 0, limit: int = 100):
-    """Lấy tất cả các giao dịch (Demo mock)"""
-    return [
-        {"id": 1, "bien_so": "29A-12345", "gate": "VAO", "time": "2026-04-15 08:00"}
-    ]
-
-@router.get("/transactions/{transaction_id}")
-async def get_transaction(transaction_id: int):
-    """Lấy giao dịch theo ID (Demo mock)"""
-    return {"id": transaction_id, "bien_so": "29A-12345", "gate": "VAO"}
+async def get_transactions(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Truy xuất toàn bộ lịch sử ra vào bãi xe"""
+    transactions = db.query(Transaction).offset(skip).limit(limit).all()
+    return transactions
 
 # ==========================================
-# HEALTH CHECK ENDPOINTS
+# HEALTH CHECK
 # ==========================================
 
 @router.get("/health")
 async def health_check():
-    """System health check"""
-    return {"status": "healthy", "service": "parking-api"}
+    """Kiểm tra tình trạng máy chủ"""
+    return {"status": "healthy", "service": "parking-api-production"}
