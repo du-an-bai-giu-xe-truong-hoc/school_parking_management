@@ -1,10 +1,9 @@
 # gui/main.py
-import logging
-import os
+import customtkinter as ctk
+from dotenv import load_dotenv
 from app_window import MainApp
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
-    logging.info("🚀 Khởi động GUI Quản Lý Bãi Xe")
+    load_dotenv()
     app = MainApp()
     app.mainloop()
