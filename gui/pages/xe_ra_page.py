@@ -1,8 +1,8 @@
 # gui/pages/xe_ra_page.py
 import customtkinter as ctk
-from ..styles import AppStyle
-from ..utils.api_client import ApiClient
-from ..utils.hardware_controller import HardwareController
+from styles import AppStyle
+from utils.api_client import ApiClient
+from utils.hardware_controller import HardwareController
 
 class XeRaPage(ctk.CTkFrame):
     def __init__(self, parent, main_app):
