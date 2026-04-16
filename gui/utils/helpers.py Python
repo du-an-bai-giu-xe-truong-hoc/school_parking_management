@@ -1,0 +1,40 @@
+# gui/utils/helpers.py
+import customtkinter as ctk
+from styles import AppStyle
+import logging
+
+class Toast:
+    """Hiển thị thông báo đẹp (toast) giống ứng dụng chuyên nghiệp"""
+    @staticmethod
+    def show(parent, message: str, type: str = "success", duration: int = 3000):
+        colors = {
+            "success": AppStyle.SUCCESS,
+            "error": AppStyle.DANGER,
+            "warning": AppStyle.WARNING,
+            "info": AppStyle.ACCENT
+        }
+        color = colors.get(type, AppStyle.ACCENT)
+
+        toast = ctk.CTkToplevel(parent)
+        toast.title("")
+        toast.geometry("380x60")
+        toast.overrideredirect(True)           # không có title bar
+        toast.attributes("-topmost", True)
+
+        # Căn giữa màn hình
+        x = parent.winfo_x() + (parent.winfo_width() - 380) // 2
+        y = parent.winfo_y() + 80
+        toast.geometry(f"+{x}+{y}")
+
+        frame = ctk.CTkFrame(toast, fg_color=color, corner_radius=8)
+        frame.pack(fill="both", expand=True, padx=2, pady=2)
+
+        lbl = ctk.CTkLabel(frame, text=message, text_color="white",
+                           font=ctk.CTkFont(size=14, weight="bold"))
+        lbl.pack(pady=12)
+
+        def close_toast():
+            toast.destroy()
+
+        toast.after(duration, close_toast)
+        logging.info(f"TOAST: {type.upper()} - {message}")
