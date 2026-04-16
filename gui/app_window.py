@@ -1,48 +1,55 @@
 # gui/app_window.py
 import customtkinter as ctk
-from styles import AppStyle
-from pages.dashboard_page import DashboardPage
-from pages.xe_vao_page import XeVaoPage
-from pages.xe_ra_page import XeRaPage
-from pages.quan_ly_page import QuanLyPage   # ← THÊM DÒNG NÀY
-from utils.api_client import ApiClient
-import logging
+from datetime import datetime
+from .styles import AppStyle
+from .pages.dashboard_page import DashboardPage
+from .pages.xe_vao_page import XeVaoPage
+from .pages.xe_ra_page import XeRaPage
 
 class MainApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-        AppStyle.apply_theme()
-        self.title("App Quản Lý Xe - Bãi Giữ Xe Trường Học")
-        self.geometry("1450x920")
-        self.minsize(1300, 850)
+        AppStyle.apply()
+        self.title("App Quản Lý Xe")
+        self.geometry("1400x900")
+        self.minsize(1200, 700)
 
         # Header
         self.header = ctk.CTkFrame(self, height=60, fg_color=AppStyle.PRIMARY)
-        self.header.pack(fill="x")
-        ctk.CTkLabel(self.header, text="App Quản Lý Xe", font=ctk.CTkFont(size=22, weight="bold"), text_color="white").pack(side="left", padx=20, pady=15)
+        self.header.pack(fill="x", padx=0, pady=0)
+        self.header.pack_propagate(False)
+
+        ctk.CTkLabel(self.header, text="P", font=("Helvetica", 28, "bold"),
+                     text_color="white").pack(side="left", padx=15)
+        ctk.CTkLabel(self.header, text="App Quản Lý Xe", font=("Helvetica", 22, "bold"),
+                     text_color="white").pack(side="left", padx=5)
+
+        self.time_label = ctk.CTkLabel(self.header, text="", font=("Helvetica", 14), text_color="white")
+        self.time_label.pack(side="right", padx=20)
+        self._update_time()
+
+        ctk.CTkLabel(self.header, text="Nguyễn Văn A", font=("Helvetica", 14), text_color="white").pack(side="right", padx=10)
+
+        ctk.CTkButton(self.header, text="🚨 Báo Động", fg_color=AppStyle.DANGER, width=120,
+                      command=self.show_alert).pack(side="right", padx=8)
+        ctk.CTkButton(self.header, text="📧 Góp ý", width=100).pack(side="right", padx=8)
 
         # Tabview
-        self.tabview = ctk.CTkTabview(self, fg_color="#1E2937")
+        self.tabview = ctk.CTkTabview(self, fg_color="transparent")
         self.tabview.pack(fill="both", expand=True, padx=10, pady=10)
 
         self.tabview.add("Xe Vào")
         self.tabview.add("Xe Ra")
         self.tabview.add("Thông Tin")
-        self.tabview.add("Quản Lý")          # ← TAB MỚI
 
-        # Gắn các page
-        self.dashboard_page = DashboardPage(self.tabview.tab("Thông Tin"), self)
-        self.xe_vao_page = XeVaoPage(self.tabview.tab("Xe Vào"), self)
-        self.xe_ra_page = XeRaPage(self.tabview.tab("Xe Ra"), self)
-        self.quan_ly_page = QuanLyPage(self.tabview.tab("Quản Lý"), self)   # ← THÊM DÒNG NÀY
+        # Gắn page
+        XeVaoPage(self.tabview.tab("Xe Vào"), self).pack(fill="both", expand=True)
+        XeRaPage(self.tabview.tab("Xe Ra"), self).pack(fill="both", expand=True)
+        DashboardPage(self.tabview.tab("Thông Tin"), self).pack(fill="both", expand=True)
 
-        # Status bar
-        self.status_bar = ctk.CTkLabel(self, text="✅ Backend connected | Barrier ready | Database ready", 
-                                       text_color=AppStyle.SUCCESS, anchor="w")
-        self.status_bar.pack(fill="x", padx=10, pady=5)
+    def _update_time(self):
+        self.time_label.configure(text=datetime.now().strftime("%H:%M | %d/%m/%Y"))
+        self.after(1000, self._update_time)
 
-        self.protocol("WM_DELETE_WINDOW", self.on_closing)
-
-    def on_closing(self):
-        logging.info("Đóng ứng dụng GUI")
-        self.destroy()
+    def show_alert(self):
+        ctk.CTkMessagebox(title="Báo Động", message="Đã gửi tín hiệu báo động!", icon="warning")
