@@ -3,51 +3,49 @@ import requests
 import logging
 from dotenv import load_dotenv
 import os
-from datetime import datetime
+
 load_dotenv()
-BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api")
+BASE_URL = os.getenv("FASTAPI_URL", "http://localhost:8000")
+
 class ApiClient:
+    """Client gọi API FastAPI - reuse models/schemas đã có trong repo"""
+
     @staticmethod
-    def _request(method: str, endpoint: str, **kwargs):
-        url = f"{BASE_URL}{endpoint}"
+    def get_vehicle_by_plate(plate: str):
+        """Lấy thông tin xe theo biển số"""
         try:
-            resp = requests.request(method, url, timeout=8, **kwargs)
+            resp = requests.get(f"{BASE_URL}/vehicles/by-plate/{plate}")
             resp.raise_for_status()
             return resp.json()
-        except requests.exceptions.ConnectionError:
-            logging.error(f"❌ Không kết nối được backend {url}")
-            return {"error": "Không kết nối được backend. Kiểm tra FastAPI đang chạy port 8000 chưa?"}
-        except requests.exceptions.HTTPError as e:
-            logging.error(f"❌ API Error {url}: {e.response.status_code} - {e.response.text}")
-            return {"error": f"API lỗi {e.response.status_code}"}
         except Exception as e:
-            logging.error(f"❌ Unexpected error {url}: {e}")
-            return {"error": str(e)}
+            logging.error(f"API get_vehicle_by_plate lỗi: {e}")
+            return None
+
     @staticmethod
-    def get(endpoint: str, params=None):
-        return ApiClient._request("GET", endpoint, params=params)
+    def check_balance(vehicle_id: int):
+        try:
+            resp = requests.get(f"{BASE_URL}/vehicles/{vehicle_id}/balance")
+            resp.raise_for_status()
+            return resp.json().get("balance", 0)
+        except:
+            return 0
+
     @staticmethod
-    def post(endpoint: str, json_data: dict):
-        return ApiClient._request("POST", endpoint, json=json_data)
-    # Các endpoint quan trọng (dựa trên repo của bạn)
+    def create_transaction(data: dict):
+        """Tạo giao dịch vào/ra"""
+        try:
+            resp = requests.post(f"{BASE_URL}/transactions/", json=data)
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            logging.error(f"Create transaction lỗi: {e}")
+            return None
+
     @staticmethod
-    def get_dashboard():
-        return ApiClient.get("/stats/dashboard")
-    @staticmethod
-    def check_vehicle(plate: str, lane: str = "A"):
-        return ApiClient.post("/vehicles/check", {"plate": plate, "lane": lane})
-    @staticmethod
-    def open_barrier(lane: str):
-        # Chỉ gọi khi đã check đủ điều kiện (được gọi từ page)
-        return ApiClient.post("/barrier/open", {"lane": lane})
-    @staticmethod
-    def get_transaction_history(plate: str = None, limit=20):
-        params = {"plate": plate, "limit": limit} if plate else {"limit": limit}
-        return ApiClient.get("/transactions/history", params=params)
-    @staticmethod
-    def update_balance(vehicle_id: int, amount: int, action: str):
-        return ApiClient.post("/transactions/balance", {
-            "vehicle_id": vehicle_id,
-            "amount": amount,
-            "action": action # "add" hoặc "subtract"
-        })
+    def open_barrier():
+        """Gọi API mở barrier"""
+        try:
+            resp = requests.post(f"{BASE_URL}/hardware/open-barrier")
+            return resp.status_code == 200
+        except:
+            return False
