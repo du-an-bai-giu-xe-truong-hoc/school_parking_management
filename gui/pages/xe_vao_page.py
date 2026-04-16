@@ -1,10 +1,10 @@
 # gui/pages/xe_vao_page.py
 import customtkinter as ctk
 from PIL import Image, ImageTk
-from ..utils.camera import CameraHandler
-from ..utils.api_client import ApiClient
-from ..utils.hardware_controller import HardwareController
-from ..styles import AppStyle
+from utils.camera import CameraHandler
+from utils.api_client import ApiClient
+from utils.hardware_controller import HardwareController
+from styles import AppStyle
 
 class XeVaoPage(ctk.CTkFrame):
     def __init__(self, parent, main_app):
