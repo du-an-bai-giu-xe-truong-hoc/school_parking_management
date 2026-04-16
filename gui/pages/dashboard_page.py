@@ -1,6 +1,6 @@
 # gui/pages/dashboard_page.py
 import customtkinter as ctk
-from ..styles import AppStyle
+from styles import AppStyle
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk
