@@ -24,7 +24,7 @@ class XeVaoPage(ctk.CTkFrame):
         frame = ctk.CTkFrame(self, corner_radius=12, fg_color=AppStyle.CARD_BG)
         frame.grid(row=0, column=col, padx=10, pady=10, sticky="nsew")
 
-        ctk.CTkLabel(frame, text=title, font=AppStyle().subtitle, text_color=AppStyle.PRIMARY).pack(pady=(10, 5))
+        ctk.CTkLabel(frame, text=title, font=AppStyle.SUBTITLE_FONT, text_color=AppStyle.PRIMARY).pack(pady=(10, 5))
 
         # Camera
         cam_frame = ctk.CTkFrame(frame, height=240)
