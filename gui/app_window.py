@@ -1,11 +1,12 @@
 # gui/app_window.py
 import customtkinter as ctk
 from datetime import datetime
-from .styles import AppStyle
-from .pages.dashboard_page import DashboardPage
-from .pages.xe_vao_page import XeVaoPage
-from .pages.xe_ra_page import XeRaPage
 
+# SỬA IMPORT Ở ĐÂY (bỏ dấu chấm)
+from styles import AppStyle
+from pages.dashboard_page import DashboardPage
+from pages.xe_vao_page import XeVaoPage
+from pages.xe_ra_page import XeRaPage
 class MainApp(ctk.CTk):
     def __init__(self):
         super().__init__()
