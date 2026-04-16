@@ -12,3 +12,23 @@ sqlalchemy==2.0.36
 pydantic==2.10.3
 pandas==2.2.3
 ttkbootstrap==0.5.3          # cho Table đẹp
+# GUI
+customtkinter>=5.2.0
+Pillow>=10.0.0
+
+# API & Utils
+requests>=2.31.0
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+
+# Hardware & Scan
+pyserial>=3.5
+pyzbar>=0.1.9
+opencv-python-headless>=4.8.0
+
+# Report & Table
+pandas>=2.1.0
+ttkbootstrap>=1.10.0   # (tùy chọn, làm bảng đẹp hơn)
+
+# Đã có trong repo
+# fastapi, uvicorn, sqlalchemy, google-cloud-vision...
