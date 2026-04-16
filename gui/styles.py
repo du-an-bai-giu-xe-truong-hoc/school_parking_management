@@ -2,22 +2,24 @@
 import customtkinter as ctk
 
 class AppStyle:
-    PRIMARY = "#1E3A8A"      # Navy header
+    """Theme và style chung cho toàn bộ GUI (đã sửa subtitle, title, font...)"""
+
+    # Màu sắc theo ảnh bạn cung cấp
+    PRIMARY = "#1E3A8A"
     SUCCESS = "#10B981"
-    DANGER = "#EF4444"       # Đỏ cảnh báo
+    DANGER = "#EF4444"
     WARNING = "#F59E0B"
-    BG = "#F8FAFC"
-    FG = "#0F172A"
     CARD_BG = "#FFFFFF"
     TEXT_DARK = "#1E2937"
 
+    # Font (đây là phần bị thiếu trước đó)
+    TITLE_FONT = ("Helvetica", 20, "bold")
+    SUBTITLE_FONT = ("Helvetica", 16, "bold")
+    BODY_FONT = ("Helvetica", 13)
+    BUTTON_FONT = ("Helvetica", 14, "bold")
+
     @staticmethod
     def apply():
-        ctk.set_appearance_mode("light")   # Ảnh bạn gửi là light theme
+        """Áp dụng theme light (giống ảnh bạn gửi)"""
+        ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("blue")
-        return {
-            "title": ("Helvetica", 20, "bold"),
-            "subtitle": ("Helvetica", 16, "bold"),
-            "body": ("Helvetica", 13),
-            "button": ("Helvetica", 14, "bold"),
-        }
