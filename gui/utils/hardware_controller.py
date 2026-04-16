@@ -1,22 +1,40 @@
-# gui/utils/hardware_controller.py - Reuse pyserial từ repo
+# gui/utils/hardware_controller.py
 import serial
 import logging
-import time
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
 class HardwareController:
+    """Điều khiển barrier qua pyserial (reuse code trong folder hardware/ của repo)"""
+
     def __init__(self):
-        self.port = None
+        self.port = os.getenv("SERIAL_PORT", "/dev/ttyUSB0")
+        self.baudrate = int(os.getenv("BAUDRATE", 9600))
+        self.ser = None
+
+    def connect(self) -> bool:
         try:
-            # Đọc từ .env hoặc config của repo
-            self.port = serial.Serial('/dev/ttyUSB0', 9600, timeout=1) # thay đổi port nếu cần
+            self.ser = serial.Serial(self.port, self.baudrate, timeout=1)
             logging.info("✅ Kết nối barrier thành công")
-        except Exception as e:
-            logging.warning(f"⚠️ Không kết nối được barrier: {e} (chế độ simulate)")
-    def open_barrier(self, lane: str = "A"):
-        if self.port:
-            self.port.write(b'OPEN\n') # lệnh thực tế theo hardware repo
-            time.sleep(0.5)
-            logging.info(f"🚧 Mở barrier làn {lane}")
             return True
-        else:
-            logging.info(f"🔧 SIMULATE: Mở barrier làn {lane}")
-            return True # simulate cho test
+        except Exception as e:
+            logging.error(f"❌ Không kết nối được barrier: {e}")
+            return False
+
+    def open_barrier(self, lane: str = "A") -> bool:
+        if not self.ser:
+            self.connect()
+        try:
+            cmd = b'OPEN_A\n' if lane == "A" else b'OPEN_B\n'
+            self.ser.write(cmd)
+            logging.info(f"🚧 Mở barrier lane {lane}")
+            return True
+        except Exception as e:
+            logging.error(f"Mở barrier lỗi: {e}")
+            return False
+
+    def close(self):
+        if self.ser:
+            self.ser.close()
