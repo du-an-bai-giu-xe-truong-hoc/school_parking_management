@@ -1,40 +1,17 @@
 # gui/utils/helpers.py
-import customtkinter as ctk
-from styles import AppStyle
+import tkinter as tk
 import logging
 
-class Toast:
-    """Hiển thị thông báo đẹp (toast) giống ứng dụng chuyên nghiệp"""
-    @staticmethod
-    def show(parent, message: str, type: str = "success", duration: int = 3000):
-        colors = {
-            "success": AppStyle.SUCCESS,
-            "error": AppStyle.DANGER,
-            "warning": AppStyle.WARNING,
-            "info": AppStyle.ACCENT
-        }
-        color = colors.get(type, AppStyle.ACCENT)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-        toast = ctk.CTkToplevel(parent)
-        toast.title("")
-        toast.geometry("380x60")
-        toast.overrideredirect(True)           # không có title bar
-        toast.attributes("-topmost", True)
-
-        # Căn giữa màn hình
-        x = parent.winfo_x() + (parent.winfo_width() - 380) // 2
-        y = parent.winfo_y() + 80
-        toast.geometry(f"+{x}+{y}")
-
-        frame = ctk.CTkFrame(toast, fg_color=color, corner_radius=8)
-        frame.pack(fill="both", expand=True, padx=2, pady=2)
-
-        lbl = ctk.CTkLabel(frame, text=message, text_color="white",
-                           font=ctk.CTkFont(size=14, weight="bold"))
-        lbl.pack(pady=12)
-
-        def close_toast():
-            toast.destroy()
-
-        toast.after(duration, close_toast)
-        logging.info(f"TOAST: {type.upper()} - {message}")
+def show_toast(parent, message: str, title: str = "Thông báo", duration: int = 2500):
+    """Toast thông báo đẹp (dùng trong toàn bộ GUI)"""
+    toast = tk.Toplevel(parent)
+    toast.overrideredirect(True)
+    toast.geometry("420x90+750+650")
+    toast.configure(bg="#1E3A8A")
+    label = tk.Label(toast, text=message, bg="#1E3A8A", fg="white",
+                     font=("Helvetica", 14, "bold"), wraplength=400, justify="center")
+    label.pack(pady=25)
+    toast.after(duration, toast.destroy)
+    toast.attributes("-topmost", True)
