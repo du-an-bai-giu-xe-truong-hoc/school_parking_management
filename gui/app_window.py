@@ -84,12 +84,49 @@ class MainApp(ctk.CTk):
         self.dashboard_page.pack(fill="both", expand=True)
 
         self._refresh_data_views()
+        self.xe_ra_page.stop_cameras()
+
+        self._active_tab = self.tabview.get()
+        self.after(250, self._watch_tab_change)
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _refresh_data_views(self):
         for page in (self.log_history_page, self.dashboard_page):
             refresh = getattr(page, "refresh_data", None)
             if callable(refresh):
                 refresh()
+
+    def _watch_tab_change(self):
+        if not self.winfo_exists():
+            return
+
+        current_tab = self.tabview.get()
+        if current_tab != self._active_tab:
+            self._handle_tab_change(current_tab)
+            self._active_tab = current_tab
+
+        self.after(250, self._watch_tab_change)
+
+    def _handle_tab_change(self, current_tab: str):
+        if current_tab == "Xe Ra":
+            self.xe_ra_page.stop_cameras()
+            self.xe_vao_page.begin_exit_transition(3, on_complete=self.xe_ra_page.start_cameras)
+            return
+
+        self.xe_vao_page.cancel_transition()
+        self.xe_ra_page.stop_cameras()
+        if current_tab == "Xe Vao":
+            self.xe_vao_page.start_cameras()
+        else:
+            self.xe_vao_page.stop_cameras()
+
+    def _on_close(self):
+        try:
+            self.xe_vao_page.cancel_transition()
+            self.xe_vao_page.stop_cameras()
+            self.xe_ra_page.stop_cameras()
+        finally:
+            self.destroy()
 
     def _update_time(self):
         self.time_label.configure(text=datetime.now().strftime("%H:%M:%S | %d/%m/%Y"))

@@ -24,6 +24,7 @@ class XeRaPage(ctk.CTkFrame):
         self.hardware = HardwareController()
         self.hardware.connect()
         self._waiting_capture = False
+        self._camera_running = False
 
         self.grid_columnconfigure(0, weight=5)
         self.grid_columnconfigure(1, weight=5)
@@ -65,11 +66,15 @@ class XeRaPage(ctk.CTkFrame):
         )
         self.iot_camera_label.pack(fill="x", padx=14, pady=(0, 10))
 
-        camera_id = int(os.getenv("LAPTOP_CAMERA_ID", "0"))
-        self.exit_local_camera = CameraHandler(self.local_camera_label, callback=self._on_exit_barcode)
-        self.exit_local_camera.start(camera_id=camera_id)
-        self.exit_iot_camera = IoTCameraHandler(self.iot_camera_label)
-        self.exit_iot_camera.start()
+        self.exit_local_camera = CameraHandler(
+            self.local_camera_label,
+            callback=self._on_exit_barcode,
+            on_detection=self._on_exit_detection,
+        )
+        self.exit_iot_camera = IoTCameraHandler(
+            self.iot_camera_label,
+            on_detection=self._on_exit_detection,
+        )
 
         self.exit_barcode = ctk.CTkEntry(panel, placeholder_text="Nhap/quet barcode")
         self.exit_barcode.pack(fill="x", padx=14, pady=6)
@@ -79,7 +84,7 @@ class XeRaPage(ctk.CTkFrame):
 
         self.capture_status = ctk.CTkLabel(
             panel,
-            text="Nhan Xac nhan xe ra va dung yen 2-3s de chup doi soat.",
+            text="Dang quet bien so + REFC/QR bang khung do theo doi.",
             font=AppStyle.BODY_FONT,
             text_color="#334155",
         )
@@ -202,6 +207,34 @@ class XeRaPage(ctk.CTkFrame):
         if not value:
             return
         self.after(0, lambda: self._set_exit_barcode(value))
+
+    def _on_exit_detection(self, payload: dict):
+        self.after(0, lambda p=payload: self._apply_exit_detection(p))
+
+    def _apply_exit_detection(self, payload: dict):
+        detection_type = str(payload.get("type", "")).strip().lower()
+        value = str(payload.get("value", "")).strip()
+        confidence = float(payload.get("confidence", 0.0) or 0.0)
+        source = str(payload.get("source", "-")).strip()
+
+        if not value:
+            return
+
+        self.capture_status.configure(
+            text=f"[{source}] {detection_type.upper()}: {value} ({confidence:.1f}%)"
+        )
+
+        if detection_type == "plate" and confidence >= 45.0:
+            current_plate = self.exit_plate.get().strip().upper()
+            if current_plate != value.upper():
+                self.exit_plate.delete(0, "end")
+                self.exit_plate.insert(0, value)
+
+        if detection_type in ("refc", "qr") and confidence >= 70.0:
+            current_barcode = self.exit_barcode.get().strip()
+            if current_barcode != value:
+                self.exit_barcode.delete(0, "end")
+                self.exit_barcode.insert(0, value)
 
     def _set_exit_barcode(self, value: str):
         self.exit_barcode.delete(0, "end")
@@ -349,7 +382,7 @@ class XeRaPage(ctk.CTkFrame):
         self.lbl_owner.configure(text="Chu xe: -")
         self.lbl_balance.configure(text="So du: -")
         self.lbl_lock.configure(text="Khoa xe: -")
-        self.capture_status.configure(text="Nhan Xac nhan xe ra va dung yen 2-3s de chup doi soat.")
+        self.capture_status.configure(text="Dang quet bien so + REFC/QR bang khung do theo doi.")
         self.entry_image_label.configure(image=None, text="Chua co anh vao")
         self.entry_image_label.image = None
         self.exit_image_label.configure(image=None, text="Chua co anh ra")
@@ -358,3 +391,15 @@ class XeRaPage(ctk.CTkFrame):
         self.result_box.delete("1.0", "end")
         self.result_box.insert("1.0", "Chua co giao dich xe ra.")
         self.result_box.configure(state="disabled")
+
+    def start_cameras(self):
+        camera_id = int(os.getenv("LAPTOP_CAMERA_ID", "0"))
+        self.exit_local_camera.start(camera_id=camera_id)
+        self.exit_iot_camera.start()
+        self._camera_running = True
+        self.capture_status.configure(text="Camera xe ra dang hoat dong.")
+
+    def stop_cameras(self):
+        self.exit_local_camera.stop()
+        self.exit_iot_camera.stop()
+        self._camera_running = False

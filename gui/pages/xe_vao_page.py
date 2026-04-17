@@ -22,6 +22,9 @@ class XeVaoPage(ctk.CTkFrame):
         self.on_transaction_updated = on_transaction_updated
         self.hardware = HardwareController()
         self.hardware.connect()
+        self._transition_job = None
+        self._transition_remaining = 0
+        self._camera_running = False
 
         self.grid_columnconfigure(0, weight=5)
         self.grid_columnconfigure(1, weight=5)
@@ -71,18 +74,22 @@ class XeVaoPage(ctk.CTkFrame):
 
         self.camera_status_label = ctk.CTkLabel(
             panel,
-            text="Barcode tu camera se tu dong dien vao form.",
+            text="Dang quet: bien so + REFC/QR voi khung do theo doi.",
             font=AppStyle.BODY_FONT,
             text_color="#334155",
         )
         self.camera_status_label.pack(anchor="w", padx=14, pady=(0, 10))
 
-        camera_id = int(os.getenv("LAPTOP_CAMERA_ID", "0"))
-        self.local_camera = CameraHandler(self.local_camera_label, callback=self._on_camera_barcode)
-        self.local_camera.start(camera_id=camera_id)
-
-        self.iot_camera = IoTCameraHandler(self.iot_camera_label)
-        self.iot_camera.start()
+        self.local_camera = CameraHandler(
+            self.local_camera_label,
+            callback=self._on_camera_barcode,
+            on_detection=self._on_camera_detection,
+        )
+        self.iot_camera = IoTCameraHandler(
+            self.iot_camera_label,
+            on_detection=self._on_camera_detection,
+        )
+        self.start_cameras()
 
     def _build_form_panel(self):
         panel = ctk.CTkFrame(self, fg_color=AppStyle.CARD_BG, corner_radius=12)
@@ -157,6 +164,35 @@ class XeVaoPage(ctk.CTkFrame):
 
     def _on_camera_barcode(self, code: str):
         self.after(0, lambda: self._set_barcode_from_camera(code))
+
+    def _on_camera_detection(self, payload: dict):
+        self.after(0, lambda p=payload: self._apply_detection_payload(p))
+
+    def _apply_detection_payload(self, payload: dict):
+        detection_type = str(payload.get("type", "")).strip().lower()
+        value = str(payload.get("value", "")).strip()
+        confidence = float(payload.get("confidence", 0.0) or 0.0)
+        source = str(payload.get("source", "-")).strip()
+
+        if not value:
+            return
+
+        self.camera_status_label.configure(
+            text=f"[{source}] {detection_type.upper()}: {value} ({confidence:.1f}%)"
+        )
+
+        if detection_type == "plate" and confidence >= 45.0:
+            current_plate = self.entry_plate.get().strip().upper()
+            if current_plate != value.upper():
+                self.entry_plate.delete(0, "end")
+                self.entry_plate.insert(0, value)
+
+        if detection_type in ("refc", "qr") and confidence >= 70.0:
+            current_barcode = self.entry_barcode.get().strip()
+            if current_barcode != value:
+                self.entry_barcode.delete(0, "end")
+                self.entry_barcode.insert(0, value)
+                self._preview_vehicle()
 
     def _set_barcode_from_camera(self, code: str):
         value = (code or "").strip()
@@ -265,7 +301,58 @@ class XeVaoPage(ctk.CTkFrame):
         self.lbl_identity.configure(text="Ma dinh danh: -")
         self.lbl_balance.configure(text="So du: -")
         self.lbl_lock.configure(text="Khoa xe: -")
+        self.camera_status_label.configure(text="Dang quet: bien so + REFC/QR voi khung do theo doi.")
         self.result_box.configure(state="normal")
         self.result_box.delete("1.0", "end")
         self.result_box.insert("1.0", "Chua co giao dich xe vao.")
         self.result_box.configure(state="disabled")
+
+    def start_cameras(self):
+        self.cancel_transition()
+        camera_id = int(os.getenv("LAPTOP_CAMERA_ID", "0"))
+        self.local_camera.start(camera_id=camera_id)
+        self.iot_camera.start()
+        self._camera_running = True
+        self.camera_status_label.configure(text="Camera xe vao dang hoat dong.")
+
+    def stop_cameras(self):
+        self.local_camera.stop()
+        self.iot_camera.stop()
+        self._camera_running = False
+
+    def begin_exit_transition(self, seconds: int = 3, on_complete=None):
+        self.cancel_transition()
+        self._transition_remaining = max(1, int(seconds))
+
+        def _done_callback():
+            self.stop_cameras()
+            self.camera_status_label.configure(text="Da dung camera xe vao, chuyen sang camera xe ra.")
+            if callable(on_complete):
+                on_complete()
+
+        self._transition_done = _done_callback
+        self._transition_tick()
+
+    def _transition_tick(self):
+        if self._transition_remaining > 0:
+            self.camera_status_label.configure(
+                text=f"Chuyen sang xe ra sau {self._transition_remaining}s..."
+            )
+            self._transition_remaining -= 1
+            self._transition_job = self.after(1000, self._transition_tick)
+            return
+
+        callback = getattr(self, "_transition_done", None)
+        self._transition_done = None
+        self._transition_job = None
+        if callable(callback):
+            callback()
+
+    def cancel_transition(self):
+        if self._transition_job is not None:
+            try:
+                self.after_cancel(self._transition_job)
+            except Exception:
+                pass
+        self._transition_job = None
+        self._transition_done = None
