@@ -24,6 +24,7 @@ class Vehicle(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     license_plate = Column(String(20), unique=True, nullable=False) 
     vehicle_type = Column(String(50), nullable=False) 
+    color = Column(String(50)) # <-- PHẢI CÓ DÒNG NÀY ĐỂ KHỚP VỚI SQL SERVER
     owner_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     owner = relationship("User", back_populates="vehicles")
     transactions = relationship("Transaction", back_populates="vehicle")

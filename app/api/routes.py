@@ -71,13 +71,12 @@ async def update_user(user_id: int, user_update: UserUpdate, db: Session = Depen
 async def get_vehicles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Truy xuất danh sách phương tiện thực tế từ SQL Server"""
     try:
-        vehicles = db.query(Vehicle).offset(skip).limit(limit).all()
+        # Valkyrie Yêu cầu: Bổ sung lệnh xếp hàng order_by(Vehicle.id)
+        vehicles = db.query(Vehicle).order_by(Vehicle.id).offset(skip).limit(limit).all()
         return vehicles
     except Exception as e:
-        # Nếu vẫn lỗi 500, đoạn này sẽ ghi lại bằng chứng vào Terminal
         print(f"[LỖI TRUY VẤN]: {str(e)}")
         raise HTTPException(status_code=500, detail="Lỗi truy xuất cơ sở dữ liệu.")
-
 @router.post("/vehicles/", response_model=VehicleResponse)
 async def create_vehicle(vehicle_data: dict, db: Session = Depends(get_db)):
     """Đăng ký phương tiện mới vào hệ thống"""

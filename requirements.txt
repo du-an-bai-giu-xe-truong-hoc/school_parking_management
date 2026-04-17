@@ -30,6 +30,7 @@ google-cloud-vision
 # Development
 pytest==7.4.3
 pytest-asyncio==0.21.1
+customtkinter == 5.2.2
 
 # Optional: AI/ML for license plate recognition (commented out)
 # opencv-python==4.8.1.78
