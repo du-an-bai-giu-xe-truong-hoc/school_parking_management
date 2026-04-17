@@ -2,10 +2,13 @@ import os
 import urllib
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def _build_default_connection_string() -> str:
-    driver = os.getenv("DB_DRIVER", "{ODBC Driver 17 for SQL Server}")
+    driver = os.getenv("DB_DRIVER", "{ODBC Driver 18 for SQL Server}")
     server = os.getenv("DB_SERVER", "localhost")
     port = os.getenv("DB_PORT", "")
     database = os.getenv("DB_DATABASE", "school_parking_management")

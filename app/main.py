@@ -5,15 +5,15 @@ Hệ thống quản lý bãi đỗ xe trường học
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.api.routes import router
-from app.core.config import settings
-from app.db.session import engine
 from app.db.base import Base
+from app.db.runtime_migration import apply_runtime_migrations
 from app.db.session import engine
-from app.db.base import Base
 
 # Ra lệnh tạo toàn bộ bảng (Users, Vehicles, Transactions) nếu chưa có
 Base.metadata.create_all(bind=engine)
+apply_runtime_migrations(engine)
 # Khởi tạo FastAPI app
 app = FastAPI(
     title="School Parking Management API",
