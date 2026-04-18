@@ -20,9 +20,9 @@ lunardate==0.2.0
 
 # Google Cloud Vision for OCR
 google-cloud-vision
+ultralytics==8.3.167
 
 # Legacy OCR dependencies (commented out after switching to Google Cloud Vision)
-# ultralytics
 # transformers
 # torch
 # pillow
@@ -30,6 +30,7 @@ google-cloud-vision
 # Development
 pytest==7.4.3
 pytest-asyncio==0.21.1
+customtkinter == 5.2.2
 
 # Optional: AI/ML for license plate recognition (commented out)
 # opencv-python==4.8.1.78
