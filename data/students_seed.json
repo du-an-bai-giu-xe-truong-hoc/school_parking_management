@@ -1,0 +1,74 @@
+[
+  {
+    "student_id": "SV001",
+    "full_name": "Nguyen Van An",
+    "class_name": "CNTT1",
+    "dob": "2004-01-15",
+    "major": "Computer Science",
+    "email": "an.nguyen@example.edu.vn",
+    "phone": "0901000001"
+  },
+  {
+    "student_id": "SV002",
+    "full_name": "Tran Thi Binh",
+    "class_name": "CNTT1",
+    "dob": "2004-03-21",
+    "major": "Information Systems",
+    "email": "binh.tran@example.edu.vn",
+    "phone": "0901000002"
+  },
+  {
+    "student_id": "SV003",
+    "full_name": "Le Minh Chau",
+    "class_name": "CNTT2",
+    "dob": "2003-11-08",
+    "major": "Software Engineering",
+    "email": "chau.le@example.edu.vn",
+    "phone": "0901000003"
+  },
+  {
+    "student_id": "SV004",
+    "full_name": "Pham Quoc Dung",
+    "class_name": "CNTT2",
+    "dob": "2004-05-12",
+    "major": "Data Science",
+    "email": "dung.pham@example.edu.vn",
+    "phone": "0901000004"
+  },
+  {
+    "student_id": "SV005",
+    "full_name": "Vo Gia Huy",
+    "class_name": "KTPM1",
+    "dob": "2003-09-30",
+    "major": "Software Engineering",
+    "email": "huy.vo@example.edu.vn",
+    "phone": "0901000005"
+  },
+  {
+    "student_id": "SV006",
+    "full_name": "Hoang Kim Lan",
+    "class_name": "KTPM1",
+    "dob": "2004-07-18",
+    "major": "Computer Networks",
+    "email": "lan.hoang@example.edu.vn",
+    "phone": "0901000006"
+  },
+  {
+    "student_id": "SV007",
+    "full_name": "Dang Tuan Minh",
+    "class_name": "KTPM2",
+    "dob": "2003-12-02",
+    "major": "Cyber Security",
+    "email": "minh.dang@example.edu.vn",
+    "phone": "0901000007"
+  },
+  {
+    "student_id": "SV008",
+    "full_name": "Bui Thi Nga",
+    "class_name": "KTPM2",
+    "dob": "2004-04-27",
+    "major": "Artificial Intelligence",
+    "email": "nga.bui@example.edu.vn",
+    "phone": "0901000008"
+  }
+]
