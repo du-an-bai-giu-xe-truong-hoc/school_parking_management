@@ -1,56 +1,168 @@
-# gui/pages/dashboard_page.py
+from datetime import datetime
+from tkinter import ttk
+
 import customtkinter as ctk
-from styles import AppStyle
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import tkinter as tk
+
+if (__package__ or "").startswith("gui"):
+    from ..styles import AppStyle
+    from ..utils.api_client import ApiClient
+else:
+    from styles import AppStyle
+    from utils.api_client import ApiClient
 
 class DashboardPage(ctk.CTkFrame):
     def __init__(self, parent, main_app):
         super().__init__(parent, fg_color="transparent")
         self.main_app = main_app
 
-        # Header dashboard
-        top_frame = ctk.CTkFrame(self, fg_color=AppStyle.CARD_BG)
-        top_frame.pack(fill="x", padx=15, pady=10)
+        self._build_summary_cards()
+        self._build_active_table()
 
-        # Tổng sức chứa + progress circle
-        ctk.CTkLabel(top_frame, text="Tổng Sức Chứa\n600 / 1000 Xe", font=("Helvetica", 22, "bold")).pack(side="left", padx=30)
-        self.progress = ctk.CTkProgressBar(top_frame, width=180, height=180, mode="determinate")
-        self.progress.set(0.6)
-        self.progress.pack(side="left", padx=30)
-        ctk.CTkLabel(top_frame, text="60%", font=("Helvetica", 48, "bold"), text_color=AppStyle.PRIMARY).pack(side="left")
+    def _build_summary_cards(self):
+        card_row = ctk.CTkFrame(self, fg_color="transparent")
+        card_row.pack(fill="x", padx=15, pady=(12, 8))
+        card_row.grid_columnconfigure((0, 1, 2), weight=1)
 
-        # 3 Card Khu A/B/C
-        card_frame = ctk.CTkFrame(self, fg_color="transparent")
-        card_frame.pack(fill="x", padx=15, pady=10)
-        self._create_zone_card(card_frame, "Khu A (Đang chờ)", "150 / 250 Xe", 0)
-        self._create_zone_card(card_frame, "Khu B (Tầng 1)", "200 / 350 Xe", 1)
-        self._create_zone_card(card_frame, "Khu C (Tầng 2)", "250 / 400 Xe", 2)
+        self.card_active = self._create_card(card_row, "Xe dang do", "0", 0)
+        self.card_completed = self._create_card(card_row, "Luot ra hom nay", "0", 1)
+        self.card_total = self._create_card(card_row, "Tong giao dich hom nay", "0", 2)
 
-        # Biểu đồ theo giờ
-        self._create_hourly_chart()
-
-        # Bảng lịch trực
-        self._create_duty_table()
-
-    def _create_zone_card(self, parent, title, count, col):
+    def _create_card(self, parent, title: str, initial_value: str, col: int):
         card = ctk.CTkFrame(parent, fg_color=AppStyle.CARD_BG, corner_radius=12)
         card.grid(row=0, column=col, padx=8, pady=8, sticky="nsew")
-        ctk.CTkLabel(card, text=title, font=("Helvetica", 15, "bold")).pack(pady=8)
-        ctk.CTkLabel(card, text=count, font=("Helvetica", 24, "bold"), text_color=AppStyle.PRIMARY).pack()
+        ctk.CTkLabel(card, text=title, font=("Helvetica", 15, "bold"), text_color="#334155").pack(
+            pady=(12, 4)
+        )
+        value_label = ctk.CTkLabel(card, text=initial_value, font=("Helvetica", 30, "bold"), text_color=AppStyle.PRIMARY)
+        value_label.pack(pady=(0, 14))
+        return value_label
 
-    def _create_hourly_chart(self):
-        fig, ax = plt.subplots(figsize=(10, 3))
-        hours = ["8h", "9h", "10h", "11h", "12h", "13h", "14h", "15h"]
-        xe_vao = [8, 15, 22, 18, 12, 25, 10, 8]
-        xe_ra = [5, 12, 18, 20, 15, 10, 6, 4]
-        ax.bar(hours, xe_vao, color="#10B981", label="Xe Vào (Xanh)")
-        ax.bar(hours, xe_ra, color="#EF4444", label="Xe Ra (Cam)", bottom=xe_vao)
-        ax.set_title("THỐNG KÊ XE RA VÀO THEO GIỜ (15/11/2023)")
-        canvas = FigureCanvasTkAgg(fig, self)
-        canvas.get_tk_widget().pack(fill="x", padx=15, pady=10)
+    def _build_active_table(self):
+        table_container = ctk.CTkFrame(self, fg_color=AppStyle.CARD_BG, corner_radius=12)
+        table_container.pack(fill="both", expand=True, padx=15, pady=(8, 15))
 
-    def _create_duty_table(self):
-        # Sử dụng CTkTable hoặc Treeview cho bảng lịch trực tuần này
-        pass  # Bạn có thể bổ sung ttk.Treeview ở đây
+        header = ctk.CTkFrame(table_container, fg_color="transparent")
+        header.pack(fill="x", padx=12, pady=(12, 6))
+        ctk.CTkLabel(
+            header,
+            text="Danh sach xe dang do trong bai",
+            font=("Helvetica", 16, "bold"),
+            text_color=AppStyle.PRIMARY,
+        ).pack(side="left")
+
+        ctk.CTkButton(header, text="Lam moi", width=100, command=self.refresh_data).pack(side="right")
+
+        self.status_label = ctk.CTkLabel(
+            table_container,
+            text="",
+            text_color="#475569",
+            font=("Helvetica", 12),
+        )
+        self.status_label.pack(anchor="w", padx=12, pady=(0, 6))
+
+        columns = (
+            "transaction_id",
+            "license_plate",
+            "owner_name",
+            "identity_card",
+            "vehicle_type",
+            "time_in",
+            "status",
+        )
+
+        table_frame = ctk.CTkFrame(table_container, fg_color="transparent")
+        table_frame.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        table_frame.grid_columnconfigure(0, weight=1)
+        table_frame.grid_rowconfigure(0, weight=1)
+
+        self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=14)
+        for col in columns:
+            self.tree.heading(col, text=col)
+            self.tree.column(col, anchor="center", width=140)
+
+        self.tree.column("owner_name", width=180)
+        self.tree.column("time_in", width=170)
+        self.tree.column("status", width=100)
+
+        scroll_y = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scroll_y.set)
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        scroll_y.grid(row=0, column=1, sticky="ns")
+
+    def refresh_data(self):
+        history_response = ApiClient.get_parking_history(limit=500)
+        active_response = ApiClient.get_active_transactions(limit=500)
+        if history_response is None or active_response is None:
+            self.status_label.configure(
+                text=(
+                    "Backend offline. Hay chay run_api.ps1 "
+                    "hoac kiem tra FASTAPI_URL/FASTAPI_PREFIX trong file .env"
+                ),
+                text_color="#B45309",
+            )
+            self.card_active.configure(text="-")
+            self.card_completed.configure(text="-")
+            self.card_total.configure(text="-")
+            for row in self.tree.get_children():
+                self.tree.delete(row)
+            return
+
+        history = history_response or []
+        active = active_response or []
+
+        today = datetime.now().date()
+        completed_today = 0
+        total_today = 0
+
+        for item in history:
+            time_in_raw = item.get("time_in")
+            time_in = self._parse_datetime(time_in_raw)
+            if time_in and time_in.date() == today:
+                total_today += 1
+                if str(item.get("status", "")).lower() == "completed":
+                    completed_today += 1
+
+        self.card_active.configure(text=str(len(active)))
+        self.card_completed.configure(text=str(completed_today))
+        self.card_total.configure(text=str(total_today))
+
+        for row in self.tree.get_children():
+            self.tree.delete(row)
+
+        for item in active:
+            self.tree.insert(
+                "",
+                "end",
+                values=(
+                    item.get("transaction_id", "-"),
+                    item.get("license_plate", "-"),
+                    item.get("owner_name", "-"),
+                    item.get("identity_card", "-"),
+                    item.get("vehicle_type", "-"),
+                    self._format_datetime(item.get("time_in")),
+                    item.get("status", "-"),
+                ),
+            )
+
+        self.status_label.configure(
+            text=f"Backend online. Active: {len(active)} | History: {len(history)}",
+            text_color="#15803D",
+        )
+
+    def _parse_datetime(self, value):
+        if not value:
+            return None
+        if isinstance(value, datetime):
+            return value
+        if isinstance(value, str):
+            try:
+                return datetime.fromisoformat(value)
+            except ValueError:
+                return None
+        return None
+
+    def _format_datetime(self, value):
+        parsed = self._parse_datetime(value)
+        if parsed is None:
+            return "-"
+        return parsed.strftime("%H:%M:%S %d/%m/%Y")

@@ -37,12 +37,9 @@ def _build_database_uri() -> str:
         return explicit_uri
 
     explicit_odbc = os.getenv("ODBC_CONNECTION_STRING")
-    if explicit_odbc:
-        params = urllib.parse.quote_plus(explicit_odbc)
-        return f"mssql+pyodbc:///?odbc_connect={params}"
-
-    # Local default for developers without SQL Server/ODBC configured.
-    return "sqlite:///./school_parking_management.db"
+    connection_string = explicit_odbc if explicit_odbc else _build_default_connection_string()
+    params = urllib.parse.quote_plus(connection_string)
+    return f"mssql+pyodbc:///?odbc_connect={params}"
 
 
 SQLALCHEMY_DATABASE_URI = _build_database_uri()
@@ -53,7 +50,6 @@ engine = create_engine(
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 
 def get_db():
     db = SessionLocal()

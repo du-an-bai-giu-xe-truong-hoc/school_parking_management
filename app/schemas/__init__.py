@@ -1,13 +1,33 @@
-"""
-Pydantic schemas for data validation
-Schemas Pydantic để validation dữ liệu
-"""
+"""Pydantic schemas for the parking management API."""
 
-from .camera import CameraData
-from .schemas import CameraData, UserResponse, UserUpdate, VehicleResponse
+from .schemas import (
+    CameraData,
+    ParkingEntryRequest,
+    ParkingExitRequest,
+    ParkingPreviewRequest,
+    ParkingPreviewResponse,
+    ParkingScanResponse,
+    TransactionHistoryItem,
+    TransactionResponse,
+    UserBase,
+    UserResponse,
+    UserUpdate,
+    VehicleBase,
+    VehicleResponse,
+)
+
 __all__ = [
-    "UserBase", "UserCreate", "UserUpdate", "UserResponse",
-    "VehicleBase", "VehicleCreate", "VehicleUpdate", "VehicleResponse",
-    "TransactionBase", "TransactionResponse",
-    "CameraData"
+    "CameraData",
+    "ParkingEntryRequest",
+    "ParkingExitRequest",
+    "ParkingPreviewRequest",
+    "ParkingPreviewResponse",
+    "ParkingScanResponse",
+    "TransactionHistoryItem",
+    "TransactionResponse",
+    "UserBase",
+    "UserResponse",
+    "UserUpdate",
+    "VehicleBase",
+    "VehicleResponse",
 ]

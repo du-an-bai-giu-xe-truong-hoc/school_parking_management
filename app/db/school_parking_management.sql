@@ -8,6 +8,7 @@ CREATE TABLE users (
     role VARCHAR(50) NOT NULL, -- Chức vụ: 'Student', 'Teacher', 'Staff'
     identity_card VARCHAR(20) NOT NULL UNIQUE, -- CCCD hoặc Mã SV (để đối chiếu)
     phone_number VARCHAR(15),
+    balance FLOAT NOT NULL DEFAULT 50000, -- So du tai khoan gui xe
     created_at DATETIME DEFAULT GETDATE ()
 );
 
@@ -19,6 +20,8 @@ CREATE TABLE vehicles (
     license_plate VARCHAR(20) NOT NULL UNIQUE, -- Biển số xe (Dữ liệu quan trọng nhất cho OCR)
     vehicle_type VARCHAR(50) NOT NULL, -- Phân loại: 'Motorbike', 'Bicycle', 'Car'
     color NVARCHAR(50),
+    is_locked BIT NOT NULL DEFAULT 0, -- 1: xe bi khoa
+    lock_reason NVARCHAR(255) NULL,
     owner_id INT NOT NULL,
     -- Thiết lập liên kết ngoại (Foreign Key) về bảng users
     -- CASCADE: Nếu xóa người dùng, toàn bộ xe của người đó cũng bị xóa khỏi hồ sơ
@@ -35,6 +38,15 @@ CREATE TABLE transactions (
     time_out DATETIME NULL, -- Chờ cập nhật khi xe ra khỏi bãi
     status VARCHAR(20) DEFAULT 'Parked', -- Trạng thái: 'Parked' (Đang đỗ), 'Completed' (Đã rời đi)
     fee FLOAT DEFAULT 0.0,
+    lane NVARCHAR(20) NULL,
+    barcode_raw NVARCHAR(MAX) NULL,
+    scanned_plate NVARCHAR(30) NULL,
+    entry_iot_image_path NVARCHAR(255) NULL,
+    exit_iot_image_path NVARCHAR(255) NULL,
+    entry_local_image_path NVARCHAR(255) NULL,
+    exit_local_image_path NVARCHAR(255) NULL,
+    image_similarity_score FLOAT DEFAULT 0.0,
+    alert_flag BIT NOT NULL DEFAULT 0,
     -- Thiết lập liên kết ngoại về bảng vehicles
     CONSTRAINT FK_Transaction_Vehicle FOREIGN KEY (vehicle_id) REFERENCES vehicles (id) ON DELETE CASCADE
 );
@@ -299,3 +311,21 @@ VALUES (
         'White',
         20
     );
+
+-- -------------------------------------------------------------------------
+-- 3. DU LIEU MAU CHO SO DU VA BAO MAT
+-- -------------------------------------------------------------------------
+UPDATE users
+SET balance = CASE
+    WHEN id = 1 THEN 120000
+    WHEN id = 2 THEN 90000
+    WHEN id = 3 THEN 70000
+    WHEN id = 9 THEN 4500
+    WHEN id = 20 THEN 65000
+    ELSE 50000
+END;
+
+UPDATE vehicles
+SET is_locked = 1,
+    lock_reason = N'Vi pham noi quy, khoa tam thoi'
+WHERE license_plate = '43K1-888.33';

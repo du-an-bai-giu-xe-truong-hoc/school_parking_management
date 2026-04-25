@@ -20,9 +20,10 @@ lunardate==0.2.0
 
 # Google Cloud Vision for OCR
 google-cloud-vision
+ultralytics==8.3.167
+thefuzz==0.22.1
 
 # Legacy OCR dependencies (commented out after switching to Google Cloud Vision)
-# ultralytics
 # transformers
 # torch
 # pillow
