@@ -21,6 +21,7 @@ from app.database import (
     get_student_by_ref_code,
 )
 from app.qr_generator import generate_all_barcodes, generate_all_qr
+from app.parking_log import log_parking_event
 
 
 @dataclass
@@ -69,6 +70,7 @@ class CameraScannerApp:
 
         self.video_label: ttk.Label
         self.status_var = tk.StringVar(value="Camera ready. Waiting for scan...")
+        self.action_var = tk.StringVar(value="-")
         self.student_id_var = tk.StringVar(value="-")
         self.full_name_var = tk.StringVar(value="-")
         self.class_var = tk.StringVar(value="-")
@@ -110,16 +112,13 @@ class CameraScannerApp:
 
         fields = [
             ("Status", self.status_var),
+            ("Action", self.action_var),
             ("Student ID", self.student_id_var),
             ("Full Name", self.full_name_var),
             ("Class", self.class_var),
             ("Major", self.major_var),
-            ("Email", self.email_var),
             ("Phone", self.phone_var),
             ("REFC", self.ref_code_var),
-            ("Product Code", self.product_code_var),
-            ("Code Type", self.code_type_var),
-            ("Raw Code", self.raw_code_var),
         ]
 
         for row, (label, value_var) in enumerate(fields):
@@ -218,14 +217,25 @@ class CameraScannerApp:
             self._clear_student_vars()
             return
 
+        ref_code = student.get("ref_code", "-")
+        product_code = student.get("product_code", "-")
+        
         self.student_id_var.set(student.get("student_id", "-"))
         self.full_name_var.set(student.get("full_name", "-"))
         self.class_var.set(student.get("class_name", "-"))
         self.major_var.set(student.get("major", "-"))
         self.email_var.set(student.get("email", "-"))
         self.phone_var.set(student.get("phone", "-"))
-        self.ref_code_var.set(student.get("ref_code", "-"))
-        self.product_code_var.set(student.get("product_code", "-"))
+        self.ref_code_var.set(ref_code)
+        self.product_code_var.set(product_code)
+        
+        # Log to PostgreSQL
+        action, timestamp = log_parking_event(
+            ma_rfid=ref_code if ref_code != "-" else "",
+            bien_so=product_code if product_code != "-" else ""
+        )
+        action_text = f"XE VÀO lúc {timestamp}" if action == "ENTRY" else (f"XE RA lúc {timestamp}" if action == "EXIT" else f"LỖI: {timestamp}")
+        self.action_var.set(action_text)
         self.status_var.set(f"Scan success ({code_type})")
 
     def _detect_any_code(self, frame: Any) -> Optional[tuple[str, str]]:
@@ -315,6 +325,7 @@ class CameraScannerApp:
         return None
 
     def _clear_student_vars(self) -> None:
+        self.action_var.set("-")
         self.student_id_var.set("-")
         self.full_name_var.set("-")
         self.class_var.set("-")
