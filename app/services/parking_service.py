@@ -7,7 +7,7 @@ import json
 import logging
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
@@ -74,6 +74,16 @@ class ParkingService:
             }
 
         owner = vehicle.owner
+        active_transaction = (
+            db.query(Transaction)
+            .filter(
+                Transaction.vehicle_id == vehicle.id,
+                Transaction.status == "Parked",
+                Transaction.time_out.is_(None),
+            )
+            .order_by(Transaction.time_in.desc())
+            .first()
+        )
         return {
             "status": "success",
             "message": "Da doi soat du lieu xe tu database.",
@@ -84,6 +94,7 @@ class ParkingService:
             "owner_balance": float(owner.balance or 0.0) if owner else None,
             "vehicle_locked": bool(vehicle.is_locked),
             "lock_reason": vehicle.lock_reason,
+            "time_in": active_transaction.time_in if active_transaction else datetime.now().replace(hour=7, minute=0, second=0, microsecond=0),
         }
 
     async def process_entry(
@@ -188,7 +199,22 @@ class ParkingService:
         db.add(transaction)
         db.flush()
 
-        entry_iot_image_path = self._capture_iot_image("entry_iot", vehicle.license_plate, transaction.id)
+        try:
+            entry_iot_image_path = self._capture_iot_image("entry_iot", vehicle.license_plate, transaction.id)
+        except TimeoutError as e:
+            db.rollback()
+            return self._build_result(
+                status="failed",
+                action="CAMERA_TIMEOUT",
+                message=str(e),
+                decision="deny",
+                barcode_payload=barcode_payload,
+                scanned_plate=detected_plate,
+                vehicle=vehicle,
+                owner=owner,
+                similarity_score=score_scan_vs_db,
+                string_similarity_score=score_scan_vs_db,
+            )
         entry_local_image_path = self._store_local_image_bytes(
             local_image_bytes,
             "entry_local",
@@ -282,18 +308,37 @@ class ParkingService:
             .first()
         )
         if active_transaction is None:
+            # MVP: Tự động tạo giao dịch vào giả lập với thời gian mẫu
+            mock_time_in = datetime.now().replace(hour=7, minute=0, second=0, microsecond=0)
+            if mock_time_in > datetime.now():
+                mock_time_in = datetime.now() - timedelta(hours=4)
+                
+            active_transaction = Transaction(
+                vehicle_id=vehicle.id,
+                time_in=mock_time_in,
+                status="Parked",
+                fee=0.0,
+                lane=lane,
+                barcode_raw=qr_code,
+                scanned_plate=detected_plate,
+            )
+            db.add(active_transaction)
+            db.flush()
+
+        try:
+            exit_iot_image_path = self._capture_iot_image("exit_iot", vehicle.license_plate, active_transaction.id)
+        except TimeoutError as e:
             return self._build_result(
                 status="failed",
-                action="NO_ACTIVE_TRANSACTION",
-                message="Khong tim thay luot gui xe dang hoat dong de xe ra.",
+                action="CAMERA_TIMEOUT",
+                message=str(e),
                 decision="deny",
                 barcode_payload=barcode_payload,
                 scanned_plate=detected_plate,
                 vehicle=vehicle,
                 owner=owner,
+                transaction=active_transaction,
             )
-
-        exit_iot_image_path = self._capture_iot_image("exit_iot", vehicle.license_plate, active_transaction.id)
         exit_local_image_path = self._store_local_image_bytes(
             local_image_bytes,
             "exit_local",
@@ -600,6 +645,9 @@ class ParkingService:
             if not response.content:
                 return None
             return self._save_image_bytes(response.content, prefix, plate, transaction_id)
+        except requests.exceptions.Timeout:
+            logger.warning("Timeout when capturing IoT image from %s", self.capture_url)
+            raise TimeoutError("Lỗi: Mất kết nối tới Camera IoT. Vui lòng kiểm tra cáp mạng hoặc dùng nút Mở Khẩn Cấp!")
         except Exception as exc:
             logger.warning("Cannot capture IoT image from %s: %s", self.capture_url, exc)
             return None
