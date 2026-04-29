@@ -1,10 +1,41 @@
-fastapi==0.136.0
-uvicorn[standard]==0.44.0
-ultralytics==8.4.39
-opencv-python==4.13.0.92
-numpy==2.4.4
-qrcode[pil]==8.2
-requests==2.33.1
-Pillow==12.2.0
-python-barcode==0.16.1
-zxing-cpp==2.3.0
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# Data Validation
+pydantic==2.5.0
+pydantic[email]==2.5.0
+
+# HTTP Client
+httpx==0.25.2
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# Hardware Communication
+pyserial==3.5
+
+# Date/Time Processing
+lunardate==0.2.0
+
+# Google Cloud Vision for OCR
+google-cloud-vision
+ultralytics==8.3.167
+thefuzz==0.22.1
+
+# Legacy OCR dependencies (commented out after switching to Google Cloud Vision)
+# transformers
+# torch
+# pillow
+
+# Development
+pytest==7.4.3
+pytest-asyncio==0.21.1
+customtkinter == 5.2.2
+
+# Optional: AI/ML for license plate recognition (commented out)
+# opencv-python==4.8.1.78
+# torch==2.1.0
+# torchvision==0.16.0
+# ultralytics==8.0.200
+# transformers==4.30.0  # For VietOCR or other text recognition

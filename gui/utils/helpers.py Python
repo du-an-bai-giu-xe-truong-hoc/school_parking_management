@@ -1,0 +1,17 @@
+# gui/utils/helpers.py
+import tkinter as tk
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def show_toast(parent, message: str, title: str = "Thông báo", duration: int = 2500):
+    """Toast thông báo đẹp (dùng trong toàn bộ GUI)"""
+    toast = tk.Toplevel(parent)
+    toast.overrideredirect(True)
+    toast.geometry("420x90+750+650")
+    toast.configure(bg="#1E3A8A")
+    label = tk.Label(toast, text=message, bg="#1E3A8A", fg="white",
+                     font=("Helvetica", 14, "bold"), wraplength=400, justify="center")
+    label.pack(pady=25)
+    toast.after(duration, toast.destroy)
+    toast.attributes("-topmost", True)
